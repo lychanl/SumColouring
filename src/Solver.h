@@ -12,5 +12,8 @@ namespace SumColouring
         static Solver& create(std::string algorithm);
         
         virtual std::vector<int> findColouring(const Graph&) = 0;
+
+    protected:
+        int getMaxColour(const Graph&);
     };
 }
