@@ -1,3 +1,5 @@
+#pragma once
+
 #include "Solver.h"
 
 namespace SumColouring
