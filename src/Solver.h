@@ -3,13 +3,14 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
 namespace SumColouring
 {
     class Solver
     {
     public:
-        static Solver& create(std::string algorithm);
+        static std::unique_ptr<Solver> create(const std::string& name);
         
         virtual std::vector<int> findColouring(const Graph&) = 0;
 
