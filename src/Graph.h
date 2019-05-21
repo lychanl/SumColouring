@@ -9,7 +9,6 @@ namespace SumColouring
         typedef std::pair<int, int> Edge;
 
         Graph(int vertices, std::set<Edge>&& edges) : v(vertices), e(edges) {}
-        Graph(int vertices, std::set<Edge>& edges) : v(vertices), e(edges) {}
 
         int getVertices() const { return v; }
         std::set<Edge>& getEdges() { return e; }
