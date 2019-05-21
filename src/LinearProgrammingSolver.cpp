@@ -11,11 +11,16 @@ using namespace SumColouring;
 // and http://fourier.eng.hmc.edu/e176/lectures/NM/node32.html
 // as reference for Simplex algorithm
 
+#include <iostream>
+
 std::vector<int> LinearProgrammingSolver::findColouring(const Graph& g)
 {
     Eigen::VectorXi target = getTarget(g);
+	std::cout << "TARGET\n" << target << std::endl;
     Eigen::MatrixXi constraints = getConstraints(g);
+	std::cout << "CONSTR\n" << constraints << std::endl;
     Eigen::VectorXi solution = solveSimplex(target, constraints);
+	std::cout << "SOLUTION\n" << solution << std::endl;
     return getColouring(g, solution);
 }
 
@@ -125,15 +130,22 @@ Eigen::VectorXi LinearProgrammingSolver::solveSimplex(Eigen::VectorXi& target, E
 
             if (fabsf(roundf(r) - r) > EPSILON)
             {
+				std::cout << "UnIntegr. " << r;
                 Eigen::MatrixXf newConstraints = Eigen::MatrixXf::Zero(constr.rows() + 1, constr.cols() + 1);
                 newConstraints.block(0, 1, constr.rows(), constr.cols()) << constr;
                 
                 for(int j = 0; j < constr.cols(); ++j)
                 {
-                    newConstraints(constr.rows(), j + 1) = tableau(i, j + 1) - floorf(tableau(i, j + 1));
+					float decimal = 0.f;
+					if (fabsf(roundf(tableau(i, j + 1)) - tableau(i, j + 1)) > EPSILON)
+						decimal = tableau(i, j + 1) - floorf(tableau(i, j + 1));
+					std::cout << "(" << decimal << ")";
+					newConstraints(constr.rows(), j + 1) = decimal;
                 }
 
                 newConstraints(constr.rows(), 0) = -1;
+
+				std::cout << std::endl << newConstraints.row(constr.rows()) << std::endl;
 
                 constr = newConstraints;
 
@@ -153,6 +165,7 @@ Eigen::VectorXi LinearProgrammingSolver::solveSimplex(Eigen::VectorXi& target, E
 
 void LinearProgrammingSolver::solveSimplex(Eigen::MatrixXf& tableau, std::vector<int>& basis)
 {
+	std::cout << "SIMPLEX\n";
     int maxc;
     do
     {
@@ -176,7 +189,7 @@ void LinearProgrammingSolver::solveSimplex(Eigen::MatrixXf& tableau, std::vector
 
             for (int i = 1; i < tableau.rows(); ++i)
             {
-                if (tableau(i, maxc) <= 0)
+                if (tableau(i, maxc) < EPSILON)
                     continue;
                 
                 float v = tableau(i, tableau.cols() - 1) / tableau(i, maxc);
@@ -187,10 +200,16 @@ void LinearProgrammingSolver::solveSimplex(Eigen::MatrixXf& tableau, std::vector
                 }
             }
 
+			std::cout << "Selected: " << maxc << "( " << tableau(0, maxc) << " ) " << bestr << "( " << bestrv << " ) " << std::endl;
+
             basis[bestr] = maxc;
             pivot(tableau, bestr, maxc);
         }
+
+		std::cout << "Result " << tableau(0, tableau.cols() - 1) << std::endl;
     } while (maxc != -1);
+
+	std::cout << std::endl;
 }
 
 std::pair<Eigen::MatrixXf, std::vector<int>> LinearProgrammingSolver::getCanonicalWithFeasibleSolution(Eigen::VectorXi& target, Eigen::MatrixXf& constraints)
@@ -228,10 +247,13 @@ std::pair<Eigen::MatrixXf, std::vector<int>> LinearProgrammingSolver::getCanonic
             tableau.row(0) -= tableau.row(i);
         }
     }
-    
+
+	std::cout << "Pre Canonical Check: " << tableau.col(tableau.cols() - 1).transpose() << std::endl;
+
     // finding first feasible solution
     // using artificial variables
     solveSimplex(tableau, basis);
+	std::cout << "Canonical Check 1: " << tableau.col(tableau.cols() - 1).transpose() << std::endl;
 
     // for all artificial vars still in basis, swap them with real variables
     for (int i = 1; i < basis.size(); ++i)
@@ -265,16 +287,20 @@ std::pair<Eigen::MatrixXf, std::vector<int>> LinearProgrammingSolver::getCanonic
         if (t(0, basis[i]) != 0)
         t.row(0) -= t.row(i) * t(0, basis[i]);
     }
-
+	std::cout << "Canonical Check 2: " << tableau.col(tableau.cols() - 1).transpose() << std::endl;
     return {t, basis};
 }
 
 void LinearProgrammingSolver::pivot(Eigen::MatrixXf& tableau, int row, int col)
 {
-    tableau.row(row) /= tableau(row, col);
-    for (int i = 0; i < tableau.rows(); ++i)
-        if (i != row)
-            tableau.row(i) -= tableau.row(row) * tableau(i, col);
+	tableau.row(row) /= tableau(row, col);
+	for (int i = 0; i < tableau.rows(); ++i)
+	{
+		if (i != row)
+		{
+			tableau.row(i) -= tableau.row(row) * tableau(i, col);
+		}
+	}
 }
 
 bool LinearProgrammingSolver::isResultIntegral(Eigen::MatrixXf& tableau, std::vector<int>& basis)

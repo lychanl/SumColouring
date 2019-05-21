@@ -41,11 +41,11 @@ std::tuple<std::vector<MaxSATSolver::Clause>, std::vector<MaxSATSolver::SpecialC
 
     for (int i = 0; i < g.getVertices(); ++i)
     {
-        for (int j = 0; j < maxColours; ++j)
+        for (int j = 1; j < maxColours; ++j)
         {
             // the higher colour assigned the higher the priority to satisfy clause where this colour is NOT assigned
             clauses.push_back({(const int)clauses.size(), {-(i * maxColours + j + 1)}});
-            weights.push_back(j + 1);
+            weights.push_back(j);
         }
     }
 
