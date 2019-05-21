@@ -6,6 +6,6 @@
 
 namespace SumColouring
 {
-    Graph readGraph(std::istream& stream);
-    void writeColouring(std::ostream& stream, const std::vector<int>& colouring);
+    Graph readGraph(std::istream& in);
+    void writeColouring(std::ostream& out, const std::vector<int>& colouring);
 }
