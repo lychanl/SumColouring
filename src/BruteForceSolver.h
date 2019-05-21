@@ -11,9 +11,9 @@ namespace SumColouring {
 
 
     private:
-        bool isAllowedCombination(std::vector<int> *colorsCombination, std::vector<std::set<int>> *relatedVertices);
+        bool isAllowedCombination(std::vector<int> &colorsCombination, std::vector<std::set<int>> &relatedVertices);
 
-        int calculateCombinationSum(std::vector<int> *pVector);
+        int calculateCombinationSum(std::vector<int> &colorsCombination);
     };
 
 }

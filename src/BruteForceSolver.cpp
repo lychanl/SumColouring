@@ -85,8 +85,8 @@ std::vector<int> BruteForceSolver::findColouring(const Graph &graph) {
     while (colouringIterator.hasNext()) {
         std::vector<int> currentCombination = colouringIterator.next();
 
-        if (isAllowedCombination(&currentCombination, &relatedVertices)) {
-            int combinationSum = calculateCombinationSum(&currentCombination);
+        if (isAllowedCombination(currentCombination, relatedVertices)) {
+            int combinationSum = calculateCombinationSum(currentCombination);
             if (combinationSum < minSum) {
                 minSum = combinationSum;
                 minCombination = currentCombination;
@@ -97,14 +97,14 @@ std::vector<int> BruteForceSolver::findColouring(const Graph &graph) {
     return minCombination;
 }
 
-bool BruteForceSolver::isAllowedCombination(std::vector<int> *colorsCombination,
-                                            std::vector<std::set<int>> *relatedVertices) {
+bool BruteForceSolver::isAllowedCombination(std::vector<int> &colorsCombination,
+                                            std::vector<std::set<int>> &relatedVertices) {
 
-    for (int currentVertex = 0; currentVertex < colorsCombination->size(); ++currentVertex) {
-        int currentVertexColor = colorsCombination->at(currentVertex);
+    for (int currentVertex = 0; currentVertex < colorsCombination.size(); ++currentVertex) {
+        int currentVertexColor = colorsCombination[currentVertex];
 
-        for (int currentRelatedVertex : relatedVertices->at(currentVertex)) {
-            if (colorsCombination->at(currentRelatedVertex) == currentVertexColor) {
+        for (int currentRelatedVertex : relatedVertices[currentVertex]) {
+            if (colorsCombination[currentRelatedVertex] == currentVertexColor) {
                 return false;
             }
         };
@@ -113,10 +113,10 @@ bool BruteForceSolver::isAllowedCombination(std::vector<int> *colorsCombination,
     return true;
 }
 
-int BruteForceSolver::calculateCombinationSum(std::vector<int> *colorsCombination) {
+int BruteForceSolver::calculateCombinationSum(std::vector<int> &colorsCombination) {
 
     int sum = 0;
-    for (int color : *colorsCombination) {
+    for (int color : colorsCombination) {
         sum += color;
     }
 
