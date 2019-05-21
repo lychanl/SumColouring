@@ -12,6 +12,7 @@ add_executable(colour
     ${PROJECT_SOURCE_DIR}/MaxSATSolver.cpp
     ${PROJECT_SOURCE_DIR}/LinearProgrammingSolver.cpp
     ${PROJECT_SOURCE_DIR}/GISSolver.cpp
-    ${PROJECT_SOURCE_DIR}/BruteForceSolver.cpp)
+    ${PROJECT_SOURCE_DIR}/BruteForceSolver.cpp
+    ${PROJECT_SOURCE_DIR}/io.cpp)
 
 target_include_directories(colour PRIVATE eigen/Eigen)
