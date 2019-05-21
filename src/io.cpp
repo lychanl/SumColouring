@@ -21,5 +21,6 @@ void SumColouring::writeColouring(std::ostream &out, const std::vector<int> &col
     int currentVertex = 1;
     for(int currentVertexColor : colouring) {
         out << currentVertex << " " << currentVertexColor << std::endl;
+        currentVertex++;
     }
 }
