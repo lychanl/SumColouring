@@ -1,5 +1,4 @@
 #include "BruteForceSolver.h"
-#include <cmath>
 #include <iostream>
 
 using namespace SumColouring;
@@ -8,9 +7,8 @@ class ColouringIterator {
 private:
     std::vector<int> currentCombination;
 
-    long maxColouringCombinations;
-
-    int processedColouringCombinations = 0;
+	bool isLast = false;
+	bool isFirst = true;
 
     const int minColor = 1;
 
@@ -19,10 +17,9 @@ private:
     int activeVertex;
 
 public:
-    ColouringIterator(int numberOfVertices) {
+    ColouringIterator(int numberOfVertices, int maxColor) {
         this->currentCombination = std::vector<int>(numberOfVertices, this->minColor);
-        this->maxColouringCombinations = (long) powl(numberOfVertices, numberOfVertices);
-        this->maxColor = numberOfVertices;
+        this->maxColor = maxColor;
 
         resetActiveVertex();
     }
@@ -30,7 +27,7 @@ public:
     virtual ~ColouringIterator() = default;
 
     bool hasNext() {
-        return processedColouringCombinations != maxColouringCombinations;
+		return !isLast;
     }
 
     void increaseCombination() {
@@ -50,16 +47,19 @@ public:
             resetActiveVertex();
         }
 
-        this->processedColouringCombinations++;
+		this->isLast = true;
+		for (int color : this->currentCombination)
+			if (color != maxColor)
+				this->isLast = false;
     }
 
     void resetActiveVertex() {
         activeVertex = currentCombination.size() - 1;
     }
 
-    std::vector<int> next() {
-        if (processedColouringCombinations == 0) {
-            processedColouringCombinations++;
+    std::vector<int>& next() {
+        if (this->isFirst) {
+            this->isFirst = false;
             return currentCombination;
         }
 
@@ -72,20 +72,15 @@ public:
 std::vector<int> BruteForceSolver::findColouring(const Graph &graph) {
 
     int numberOfVertices = graph.getVertices();
-    std::vector<std::set<int>> relatedVertices(numberOfVertices);
-    for (Graph::Edge e : graph.getEdges()) {
-        relatedVertices[e.first - 1].insert(e.second - 1);
-        relatedVertices[e.second - 1].insert(e.first - 1);
-    }
 
     int minSum = numberOfVertices * numberOfVertices;
     std::vector<int> minCombination(numberOfVertices, numberOfVertices);
 
-    auto colouringIterator = ColouringIterator(numberOfVertices);
+    auto colouringIterator = ColouringIterator(numberOfVertices, getMaxColour(graph));
     while (colouringIterator.hasNext()) {
-        std::vector<int> currentCombination = colouringIterator.next();
+        std::vector<int>& currentCombination = colouringIterator.next();
 
-        if (isAllowedCombination(currentCombination, relatedVertices)) {
+        if (isAllowedCombination(currentCombination, graph.getEdges())) {
             int combinationSum = calculateCombinationSum(currentCombination);
             if (combinationSum < minSum) {
                 minSum = combinationSum;
@@ -98,17 +93,10 @@ std::vector<int> BruteForceSolver::findColouring(const Graph &graph) {
 }
 
 bool BruteForceSolver::isAllowedCombination(std::vector<int> &colorsCombination,
-                                            std::vector<std::set<int>> &relatedVertices) {
-
-    for (int currentVertex = 0; currentVertex < colorsCombination.size(); ++currentVertex) {
-        int currentVertexColor = colorsCombination[currentVertex];
-
-        for (int currentRelatedVertex : relatedVertices[currentVertex]) {
-            if (colorsCombination[currentRelatedVertex] == currentVertexColor) {
-                return false;
-            }
-        };
-    }
+                                            const std::set<Graph::Edge> &edges) {
+	for (const Graph::Edge& edge : edges)
+		if (colorsCombination[edge.first] == colorsCombination[edge.second])
+			return false;
 
     return true;
 }
