@@ -10,7 +10,7 @@ private:
 
     long maxColouringCombinations;
 
-    int processedColouringCombinations = 0;
+    long processedColouringCombinations = 0;
 
     const int minColor = 1;
 
