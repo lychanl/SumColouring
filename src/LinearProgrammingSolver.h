@@ -20,11 +20,11 @@ namespace SumColouring
 
         // Actual solution
         Eigen::VectorXi solveSimplex(Eigen::VectorXi& target, Eigen::MatrixXi& constraints);
-        void solveSimplex(Eigen::MatrixXf& canonical, std::vector<int>& basis);
+        void solveSimplex(Eigen::MatrixXi& canonical, std::vector<int>& basis);
 
-        void pivot(Eigen::MatrixXf& m, int row, int col);
-        std::pair<Eigen::MatrixXf, std::vector<int>> getCanonicalWithFeasibleSolution(Eigen::VectorXi& target, Eigen::MatrixXf& constraints);
-        bool isResultIntegral(Eigen::MatrixXf& tableau, std::vector<int>& basis);
-        Eigen::VectorXi getResult(Eigen::MatrixXf& tableau, std::vector<int>& basis, int size);
+        void pivot(Eigen::MatrixXi& m, std::vector<int>& basis, int row, int col);
+        std::pair<Eigen::MatrixXi, std::vector<int>> getCanonicalWithFeasibleSolution(Eigen::VectorXi& target, Eigen::MatrixXi& constraints);
+        bool isResultIntegral(Eigen::MatrixXi& tableau, std::vector<int>& basis);
+        Eigen::VectorXi getResult(Eigen::MatrixXi& tableau, std::vector<int>& basis, int size);
     };
 }

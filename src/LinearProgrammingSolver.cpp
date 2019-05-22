@@ -1,8 +1,30 @@
 #include "LinearProgrammingSolver.h"
 
-#include <cmath>
+#include <exception>
 
 using namespace SumColouring;
+
+// a helper method for finding greatest common divisor
+int gcd(int a, int b)
+{
+	if (a == 0)
+		return b;
+	if (b == 0)
+		return a;
+	if (a < 0)
+		a = -a;
+	if (b < 0)
+		b = -b;
+
+	int c = a % b;
+	while (c != 0)
+	{
+		a = b;
+		b = c;
+		c = a % b;
+	}
+	return b;
+}
 
 // using https://people.orie.cornell.edu/dpw/orie6300/Lectures/lec12.pdf
 // as reference for finding initial feasible solution
@@ -109,10 +131,8 @@ std::vector<int> LinearProgrammingSolver::getColouring(const Graph& g, Eigen::Ve
 
 Eigen::VectorXi LinearProgrammingSolver::solveSimplex(Eigen::VectorXi& target, Eigen::MatrixXi& constraints)
 {
-    Eigen::MatrixXf constr = constraints.cast<float>();
-
-    auto t = getCanonicalWithFeasibleSolution(target, constr);
-    Eigen::MatrixXf tableau = std::move(t.first);
+	auto t = getCanonicalWithFeasibleSolution(target, constraints);
+    Eigen::MatrixXi tableau = std::move(t.first);
     std::vector<int> basis = std::move(t.second);
 
     solveSimplex(tableau, basis);
@@ -121,31 +141,32 @@ Eigen::VectorXi LinearProgrammingSolver::solveSimplex(Eigen::VectorXi& target, E
     {
         for (int i = 1; i < basis.size(); ++i)
         {
-            float r = tableau(i, tableau.cols() - 1);
+            int r = tableau(i, tableau.cols() - 1);
+			int divisor = tableau(i, basis[i]);
 
-            if (fabsf(roundf(r) - r) > EPSILON)
+            if (r % divisor != 0)
             {
-                Eigen::MatrixXf newConstraints = Eigen::MatrixXf::Zero(constr.rows() + 1, constr.cols() + 1);
-                newConstraints.block(0, 1, constr.rows(), constr.cols()) << constr;
+                Eigen::MatrixXi newConstraints = Eigen::MatrixXi::Zero(constraints.rows() + 1, constraints.cols() + 1);
+                newConstraints.block(0, 1, constraints.rows(), constraints.cols()) << constraints;
                 
-                for(int j = 0; j < constr.cols(); ++j)
+                for(int j = 0; j < constraints.cols(); ++j)
                 {
-					float decimal = 0.f;
-					if (fabsf(roundf(tableau(i, j + 1)) - tableau(i, j + 1)) > EPSILON)
-						decimal = tableau(i, j + 1) - floorf(tableau(i, j + 1));
-
-					newConstraints(constr.rows(), j + 1) = decimal;
+					int mod = tableau(i, j + 1) % divisor;
+					if (mod < 0)
+						mod += divisor;
+					
+					newConstraints(constraints.rows(), j + 1) = mod;
                 }
 
-                newConstraints(constr.rows(), 0) = -1;
+                newConstraints(constraints.rows(), 0) = -divisor;
 
-                constr = newConstraints;
+				constraints = newConstraints;
 
                 break;
             }
         }
 
-        t = getCanonicalWithFeasibleSolution(target, constr);
+        t = getCanonicalWithFeasibleSolution(target, constraints);
         tableau = std::move(t.first);
         basis = std::move(t.second);
 
@@ -155,7 +176,7 @@ Eigen::VectorXi LinearProgrammingSolver::solveSimplex(Eigen::VectorXi& target, E
     return getResult(tableau, basis, target.size());
 }
 
-void LinearProgrammingSolver::solveSimplex(Eigen::MatrixXf& tableau, std::vector<int>& basis)
+void LinearProgrammingSolver::solveSimplex(Eigen::MatrixXi& tableau, std::vector<int>& basis)
 {
     int maxc;
     do
@@ -180,10 +201,10 @@ void LinearProgrammingSolver::solveSimplex(Eigen::MatrixXf& tableau, std::vector
 
             for (int i = 1; i < tableau.rows(); ++i)
             {
-                if (tableau(i, maxc) < EPSILON)
+                if (tableau(i, maxc) <= 0)
                     continue;
                 
-                float v = tableau(i, tableau.cols() - 1) / tableau(i, maxc);
+                float v = ((float)tableau(i, tableau.cols() - 1)) / tableau(i, maxc);
                 if (bestr == -1 || bestrv > v)
                 {
                     bestr = i;
@@ -191,13 +212,12 @@ void LinearProgrammingSolver::solveSimplex(Eigen::MatrixXf& tableau, std::vector
                 }
             }
 
-            basis[bestr] = maxc;
-            pivot(tableau, bestr, maxc);
+			pivot(tableau, basis, bestr, maxc);
         }
     } while (maxc != -1);
 }
 
-std::pair<Eigen::MatrixXf, std::vector<int>> LinearProgrammingSolver::getCanonicalWithFeasibleSolution(Eigen::VectorXi& target, Eigen::MatrixXf& constraints)
+std::pair<Eigen::MatrixXi, std::vector<int>> LinearProgrammingSolver::getCanonicalWithFeasibleSolution(Eigen::VectorXi& target, Eigen::MatrixXi& constraints)
 {
     std::vector<int> basis(constraints.rows() + 1, -1);
     basis[0] = 0;
@@ -205,18 +225,22 @@ std::pair<Eigen::MatrixXf, std::vector<int>> LinearProgrammingSolver::getCanonic
     for (int i = 0; i < constraints.cols(); ++i)
     {
         int id;
-        if(constraints.col(i).maxCoeff(&id) == 1 && constraints.col(i).sum() == 1)
+        if(constraints.col(i).minCoeff() >= 0 && constraints.col(i).maxCoeff(&id) == constraints.col(i).sum() && constraints(id, i) > 0)
             basis[id + 1] = i + 1;
     }
 
     int requiredArtificialVars = std::count(basis.begin(), basis.end(), -1);
     
-    Eigen::MatrixXf tableau = Eigen::MatrixXf::Zero(constraints.rows() + 1, constraints.cols() + requiredArtificialVars + 1);
-
+    Eigen::MatrixXi tableau = Eigen::MatrixXi::Zero(constraints.rows() + 1, constraints.cols() + requiredArtificialVars + 1);
+	
+	Eigen::MatrixXi tabl = Eigen::MatrixXi::Zero(constraints.rows() + 1, constraints.cols() + 1);
+	tabl.block(1, 1, constraints.rows(), constraints.cols()) << constraints;
+	tabl(0, 0) = 1;
+	
     tableau.block(1, requiredArtificialVars + 1, constraints.rows(), constraints.cols()) << constraints;
 
+	tableau(0, 0) = 1;
     tableau.row(0).tail(constraints.cols()) << constraints.colwise().sum();
-    tableau(0, 0) = 1;
 
     for (int i = 1, artificial = 0; i < basis.size(); ++i)
     {
@@ -237,6 +261,9 @@ std::pair<Eigen::MatrixXf, std::vector<int>> LinearProgrammingSolver::getCanonic
     // using artificial variables
     solveSimplex(tableau, basis);
 
+	if (tableau(0, tableau.cols() - 1) != 0)
+		throw std::range_error("Numeric error");
+
     // for all artificial vars still in basis, swap them with real variables
     for (int i = 1; i < basis.size(); ++i)
     {
@@ -246,8 +273,7 @@ std::pair<Eigen::MatrixXf, std::vector<int>> LinearProgrammingSolver::getCanonic
             {
                 if (tableau(i, j) != 0)
                 {
-                    pivot(tableau, i, j);
-                    basis[i] = j;
+                    pivot(tableau, basis, i, j);
                     break;
                 }
             }
@@ -255,50 +281,73 @@ std::pair<Eigen::MatrixXf, std::vector<int>> LinearProgrammingSolver::getCanonic
     }
 
     // drop artificial variables
-    Eigen::MatrixXf t = Eigen::MatrixXf::Zero(constraints.rows() + 1, constraints.cols() + 1);
+    Eigen::MatrixXi t = Eigen::MatrixXi::Zero(constraints.rows() + 1, constraints.cols() + 1);
     t(0, 0) = 1;
     t.block(1, 1, constraints.rows(), constraints.cols()) 
         << tableau.block(1, 1 + requiredArtificialVars, constraints.rows(), constraints.cols());
         
-    t.row(0).tail(target.size() + 1) << -target.transpose().cast<float>(), 0;
+    t.row(0).tail(target.size() + 1) << -target.transpose(), 0;
     
     for (int i = 1; i < basis.size(); ++i)
     {
         basis[i] -= requiredArtificialVars;
 
-        if (t(0, basis[i]) != 0)
-        t.row(0) -= t.row(i) * t(0, basis[i]);
+		if (t(0, basis[i]) != 0)
+		{
+			int opGCD = gcd(t(i, basis[i]), t(0, basis[i]));
+			t.row(0) = t.row(0) * t(i, basis[i]) / opGCD - t.row(i) * t(0, basis[i]) / opGCD;
+		}
     }
 
     return {t, basis};
 }
 
-void LinearProgrammingSolver::pivot(Eigen::MatrixXf& tableau, int row, int col)
+void LinearProgrammingSolver::pivot(Eigen::MatrixXi& tableau, std::vector<int>& basis, int row, int col)
 {
-	tableau.row(row) /= tableau(row, col);
 	for (int i = 0; i < tableau.rows(); ++i)
 	{
-		if (i != row)
+		if (i != row && tableau(i, col) != 0)
 		{
-			tableau.row(i) -= tableau.row(row) * tableau(i, col);
+			int colGCD = gcd(tableau(i, col), tableau(row, col));
+
+			auto newRowValue = tableau.row(i) * (tableau(row, col) / colGCD) - tableau.row(row) * (tableau(i, col) / colGCD);
+
+			if (newRowValue(basis[i]) < 0)
+				tableau.row(i) *= -1;
+
+			if (newRowValue(tableau.cols() - 1) < 0)
+				throw std::range_error("Numeric error");
+
+			tableau.row(i) = newRowValue;
+
+			//reduce row by greatest common denominator to avoid exponentially increasing coefficients
+			int rowGCD = tableau.row(i).redux(gcd);
+			if (rowGCD > 0)
+				tableau.row(i) /= rowGCD;
 		}
 	}
+
+	if (tableau.col(tableau.cols() - 1).minCoeff() < 0)
+		throw std::range_error("Numeric error");
+
+	basis[row] = col;
+
+	if (tableau.col(col).maxCoeff() != tableau(row, col) || tableau.col(col).sum() != tableau(row, col))
+		throw std::range_error("Numeric error");
 }
 
-bool LinearProgrammingSolver::isResultIntegral(Eigen::MatrixXf& tableau, std::vector<int>& basis)
+bool LinearProgrammingSolver::isResultIntegral(Eigen::MatrixXi& tableau, std::vector<int>& basis)
 {
     for (int i = 1; i < basis.size(); ++i)
     {
-        float r = tableau(i, tableau.cols() - 1);
-
-        if (fabsf(roundf(r) - r) > EPSILON)
+		if (tableau(i, tableau.cols() - 1) % tableau(i, basis[i]) != 0)
             return false;
     }
 
     return true;
 }
 
-Eigen::VectorXi LinearProgrammingSolver::getResult(Eigen::MatrixXf& tableau, std::vector<int>& basis, int size)
+Eigen::VectorXi LinearProgrammingSolver::getResult(Eigen::MatrixXi& tableau, std::vector<int>& basis, int size)
 {
     Eigen::VectorXi result = Eigen::VectorXi::Zero(size);
 
@@ -306,7 +355,7 @@ Eigen::VectorXi LinearProgrammingSolver::getResult(Eigen::MatrixXf& tableau, std
 
     for (int i = 0; i < basis.size(); ++i)
         if (basis[i] >= varsOffset)
-            result[basis[i] - varsOffset] = (int)roundf(tableau(i, tableau.cols() - 1));
+            result[basis[i] - varsOffset] = tableau(i, tableau.cols() - 1) / tableau(i, basis[i]);
 
     return result;
 }

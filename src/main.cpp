@@ -2,6 +2,7 @@
 #include "Solver.h"
 
 #include <iostream>
+#include <exception>
 
 int main(int argc, char** argv)
 {
@@ -12,9 +13,17 @@ int main(int argc, char** argv)
     if (solver == nullptr)
         return -2;
     
-    SumColouring::Graph graph = SumColouring::readGraph(std::cin);
-    std::vector<int> colouring = solver->findColouring(graph);
+	try
+	{
+		SumColouring::Graph graph = SumColouring::readGraph(std::cin);
+		std::vector<int> colouring = solver->findColouring(graph);
 
-    SumColouring::writeColouring(std::cout, colouring);
-    return 0;
+		SumColouring::writeColouring(std::cout, colouring);
+		return 0;
+	}
+	catch (std::exception& exc)
+	{
+		std::cout << exc.what();
+		return -3;
+	}
 }
