@@ -18,6 +18,14 @@ Graph SumColouring::readGraph(std::istream &in) {
 }
 
 void SumColouring::writeColouring(std::ostream &out, const std::vector<int> &colouring) {
+    std::set<int> uniqueColors;
+    int sum = 0;
+    for(int currentVertexColor : colouring) {
+        uniqueColors.insert(currentVertexColor);
+        sum += currentVertexColor;
+    }
+    out << uniqueColors.size() << " " << sum << std::endl;
+
     int currentVertex = 1;
     for(int currentVertexColor : colouring) {
         out << currentVertex << " " << currentVertexColor << std::endl;
