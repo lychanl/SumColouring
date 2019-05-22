@@ -130,7 +130,11 @@ Eigen::VectorXi LinearProgrammingSolver::solveSimplex(Eigen::VectorXi& target, E
                 
                 for(int j = 0; j < constr.cols(); ++j)
                 {
-                    newConstraints(constr.rows(), j + 1) = tableau(i, j + 1) - floorf(tableau(i, j + 1));
+					float decimal = 0.f;
+					if (fabsf(roundf(tableau(i, j + 1)) - tableau(i, j + 1)) > EPSILON)
+						decimal = tableau(i, j + 1) - floorf(tableau(i, j + 1));
+
+					newConstraints(constr.rows(), j + 1) = decimal;
                 }
 
                 newConstraints(constr.rows(), 0) = -1;
@@ -176,7 +180,7 @@ void LinearProgrammingSolver::solveSimplex(Eigen::MatrixXf& tableau, std::vector
 
             for (int i = 1; i < tableau.rows(); ++i)
             {
-                if (tableau(i, maxc) <= 0)
+                if (tableau(i, maxc) < EPSILON)
                     continue;
                 
                 float v = tableau(i, tableau.cols() - 1) / tableau(i, maxc);
@@ -228,7 +232,7 @@ std::pair<Eigen::MatrixXf, std::vector<int>> LinearProgrammingSolver::getCanonic
             tableau.row(0) -= tableau.row(i);
         }
     }
-    
+
     // finding first feasible solution
     // using artificial variables
     solveSimplex(tableau, basis);
@@ -271,10 +275,14 @@ std::pair<Eigen::MatrixXf, std::vector<int>> LinearProgrammingSolver::getCanonic
 
 void LinearProgrammingSolver::pivot(Eigen::MatrixXf& tableau, int row, int col)
 {
-    tableau.row(row) /= tableau(row, col);
-    for (int i = 0; i < tableau.rows(); ++i)
-        if (i != row)
-            tableau.row(i) -= tableau.row(row) * tableau(i, col);
+	tableau.row(row) /= tableau(row, col);
+	for (int i = 0; i < tableau.rows(); ++i)
+	{
+		if (i != row)
+		{
+			tableau.row(i) -= tableau.row(row) * tableau(i, col);
+		}
+	}
 }
 
 bool LinearProgrammingSolver::isResultIntegral(Eigen::MatrixXf& tableau, std::vector<int>& basis)
