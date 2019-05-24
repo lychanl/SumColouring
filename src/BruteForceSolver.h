@@ -11,7 +11,7 @@ namespace SumColouring {
 
 
     private:
-        bool isAllowedCombination(std::vector<int> &colorsCombination, std::vector<std::set<int>> &relatedVertices);
+        bool isAllowedCombination(std::vector<int> &colorsCombination, const std::set<Graph::Edge> &relatedVertices);
 
         int calculateCombinationSum(std::vector<int> &colorsCombination);
     };
