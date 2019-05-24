@@ -3,6 +3,7 @@
 
 using namespace SumColouring;
 
+// helper class for iterating over colouring combinations
 class ColouringIterator {
 private:
     std::vector<int> currentCombination;
