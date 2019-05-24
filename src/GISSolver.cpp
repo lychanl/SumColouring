@@ -27,7 +27,9 @@ void GISSolver::findColouring(
             int nextColour)
 {
     std::set<int> nextUnassigned;
-    std::vector<verticeEdges> tempEdges = edges;
+    std::vector<int> neighbours(colouring.size(), 0);
+	for (int i = 0; i < edges.size(); ++i)
+		neighbours[i] = edges[i].size();
 
     while (unassignedVertices.size() > 0)
     {
@@ -36,9 +38,9 @@ void GISSolver::findColouring(
 
         for (int v : unassignedVertices)
         {
-            if (tempEdges[v].size() < minNeighbours)
+            if (neighbours[v] < minNeighbours)
             {
-                minNeighbours = tempEdges[v].size();
+                minNeighbours = neighbours[v];
                 nextv = v;
             }
         }
@@ -54,9 +56,9 @@ void GISSolver::findColouring(
             nextUnassigned.insert(e);
             edges[e].erase(nextv);
 
-            for (int ee : tempEdges[e])
+            for (int ee : edges[e])
             {
-                tempEdges[ee].erase(e);
+                --neighbours[ee];
             }
         }
         edges[nextv].clear();

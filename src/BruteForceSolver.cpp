@@ -95,7 +95,7 @@ std::vector<int> BruteForceSolver::findColouring(const Graph &graph) {
 bool BruteForceSolver::isAllowedCombination(std::vector<int> &colorsCombination,
                                             const std::set<Graph::Edge> &edges) {
 	for (const Graph::Edge& edge : edges)
-		if (colorsCombination[edge.first] == colorsCombination[edge.second])
+		if (colorsCombination[edge.first - 1] == colorsCombination[edge.second - 1])
 			return false;
 
     return true;
