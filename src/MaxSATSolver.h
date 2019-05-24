@@ -5,12 +5,14 @@
 
 namespace SumColouring
 {
+	//class that provides interface for MaxSAT-based algorithm implementation
     class MaxSATSolver : public Solver
     {
         const static int WEIGHT_INFINITY;
         typedef std::pair<int, std::vector<int>> Clause;
         typedef std::set<int> SpecialClause;
     public:
+		//runs algorithm and returns a vector of colors assigned to given graph
         virtual std::vector<int> findColouring(const Graph&);
 
     private:
@@ -18,6 +20,7 @@ namespace SumColouring
         // Variables are (for each colour) for every vertex
         // Returns vector of clauses, vector of =1 clauses, vector of weights and a number of variables
         std::tuple<std::vector<Clause>, std::vector<SpecialClause>, std::vector<int>, int> transformToMaxSAT(const Graph&);
+		// returns colouring of given graph encoded in given variable values
         std::vector<int> getColouring(const std::vector<bool>&, const Graph&);
 
         // SAT problem is passed as a vector of clauses,
@@ -27,6 +30,7 @@ namespace SumColouring
         // if it is empty, first pair element contains unsatisfiable clauses (with eq1 clauses excluded!)
         // else second pair element reprents values of variables that satisfy all clauses
         std::pair<std::vector<int>, std::vector<bool>> solveSAT(std::vector<Clause>& clauses, std::vector<SpecialClause>& eq1Clauses, int vars);
+		// Solves boolean satisfiability problem
         // first element in returned pair is a set of clauses ids that are not in the unsatisfiable core
         // eq0 clauses are norClauses, eq1 clauses are clauses where only one value may be true
         // and they are introduced because of performance reasons
@@ -36,6 +40,7 @@ namespace SumColouring
             std::vector<SpecialClause>& eq0Clauses,
             std::vector<SpecialClause>& eq1Clauses,
             std::vector<int>& solvedVars, int vars);
+		// updates clauses for given variable value
         void solveVar(
             std::vector<Clause>& clauses,
             std::vector<SpecialClause>& eq0Clauses, //assumption - if eq0 clauses are not empty, value MUST be false
